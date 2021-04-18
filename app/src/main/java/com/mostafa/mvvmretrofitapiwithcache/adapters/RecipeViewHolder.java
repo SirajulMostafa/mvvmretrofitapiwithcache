@@ -1,4 +1,4 @@
- package com.mostafa.mvvmretrofitapiwithcache.viewmodels;
+ package com.mostafa.mvvmretrofitapiwithcache.adapters;
 
 import android.view.View;
 import android.widget.TextView;

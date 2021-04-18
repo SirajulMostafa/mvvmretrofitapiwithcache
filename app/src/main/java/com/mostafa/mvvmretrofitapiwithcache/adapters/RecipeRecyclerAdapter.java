@@ -14,7 +14,6 @@ import com.bumptech.glide.request.RequestOptions;
 import com.mostafa.mvvmretrofitapiwithcache.R;
 import com.mostafa.mvvmretrofitapiwithcache.models.Recipe;
 import com.mostafa.mvvmretrofitapiwithcache.util.Constants;
-import com.mostafa.mvvmretrofitapiwithcache.viewmodels.RecipeViewHolder;
 
 import java.util.ArrayList;
 import java.util.List;
