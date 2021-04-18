@@ -3,9 +3,11 @@ package com.mostafa.mvvmretrofitapiwithcache;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -35,9 +37,34 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
 
         initRecyclerView();
         initSearchView();
+        subscribeObservers();
         setSupportActionBar((Toolbar)findViewById(R.id.toolbar));
     }
+        private void subscribeObservers(){
+        mRecipeListViewModel.getViewState().observe(this, new Observer<RecipeListViewModel.ViewState>() {
+            @Override
+            public void onChanged(RecipeListViewModel.ViewState viewState) {
+                if (viewState !=null){
+                    switch (viewState){
+                        case RECIPES:{
+                            //recipe will show automatically  from another observer
+                            Toast.makeText(RecipeListActivity.this, "recipes", Toast.LENGTH_SHORT).show();
+                            break;
+                        }
+                        case CATEGORIES:{
+                            Toast.makeText(RecipeListActivity.this, "categories", Toast.LENGTH_SHORT).show();
+                            displaySearchCategories();
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+        }
 
+    private void displaySearchCategories() {
+        mAdapter.displaySearchCategories();
+    }
 
     private void initRecyclerView(){
         mAdapter = new RecipeRecyclerAdapter(this);
