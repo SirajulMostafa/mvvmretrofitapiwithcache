@@ -1,8 +1,11 @@
 package com.mostafa.mvvmretrofitapiwithcache;
 
 
+import android.os.Handler;
+import android.os.Looper;
+import androidx.annotation.NonNull;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class AppExecutors {
 
@@ -14,10 +17,27 @@ public class AppExecutors {
         }
         return instance;
     }
+    //this method is for create insert update delete for database
+    private final Executor mDiskIO = Executors.newSingleThreadExecutor();
 
-    private final ScheduledExecutorService mNetworkIO = Executors.newScheduledThreadPool(3);
+    private final Executor mMainThreadExecutor = new MainThreadExecutor();
 
-    public ScheduledExecutorService networkIO(){
-        return mNetworkIO;
+
+    public Executor diskIO(){
+        return mDiskIO;
+    }
+
+    public Executor mainThread(){
+        return mMainThreadExecutor;
+    }
+
+    private static class MainThreadExecutor implements Executor{
+
+        private Handler mainThreadHandler = new Handler(Looper.getMainLooper());//looper post thread to the main thread
+
+        @Override
+        public void execute(@NonNull Runnable command) {
+            mainThreadHandler.post(command);
+        }
     }
 }
