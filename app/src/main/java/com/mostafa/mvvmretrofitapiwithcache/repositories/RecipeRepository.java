@@ -10,8 +10,10 @@ import com.mostafa.mvvmretrofitapiwithcache.AppExecutors;
 import com.mostafa.mvvmretrofitapiwithcache.models.Recipe;
 import com.mostafa.mvvmretrofitapiwithcache.persistence.RecipeDao;
 import com.mostafa.mvvmretrofitapiwithcache.persistence.RecipeDatabase;
+import com.mostafa.mvvmretrofitapiwithcache.requests.ServiceGenerator;
 import com.mostafa.mvvmretrofitapiwithcache.requests.responses.ApiResponse;
 import com.mostafa.mvvmretrofitapiwithcache.requests.responses.RecipeSearchResponse;
+import com.mostafa.mvvmretrofitapiwithcache.util.Constants;
 import com.mostafa.mvvmretrofitapiwithcache.util.NetWorkBoundResource;
 import com.mostafa.mvvmretrofitapiwithcache.util.Resource;
 
@@ -56,7 +58,12 @@ public class RecipeRepository {
             @NonNull
             @Override
             public LiveData<ApiResponse<RecipeSearchResponse>> createCall() {
-                return null;
+               return ServiceGenerator.getRecipeApi()
+               .searchRecipe(Constants.API_KEY,
+                       query,
+                       String.valueOf(pageNumber)
+               );
+                //return null;
             }
         }.getAsLiveData();
     }
