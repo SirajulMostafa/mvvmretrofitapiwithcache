@@ -16,14 +16,14 @@ import static androidx.room.OnConflictStrategy.REPLACE;
 public interface RecipeDao {
     //... ignore if conflict
     @Insert(onConflict = IGNORE)
-    long insertRecipes(Recipe... recipes);
+    long[] insertRecipes(Recipe...recipes);
 
     @Insert(onConflict = REPLACE)
     void insertRecipe(Recipe recipe);
 
     @Query(" UPDATE recipes SET title = :title,publisher = :publisher, image_url = :image_url, social_rank =:social_rank" +
-            " WHERE recipe_id = :publisher")
-    LiveData<List<Recipe>> updateRecipe(String recipe_id, String title, String publisher, String image_url, float social_rank);
+            " WHERE recipe_id = :recipe_id")
+    void updateRecipe(String recipe_id, String title, String publisher, String image_url, float social_rank);
 
     @Query("SELECT * FROM recipes WHERE title LIKE '%' || :query || '%' OR ingredients LIKE '%' || :query || '%' " +
             " ORDER BY social_rank DESC LIMIT (:pageNumber * 30)")

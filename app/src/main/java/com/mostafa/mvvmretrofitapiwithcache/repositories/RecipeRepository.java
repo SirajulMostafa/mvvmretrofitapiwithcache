@@ -1,6 +1,7 @@
 package com.mostafa.mvvmretrofitapiwithcache.repositories;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,6 +21,7 @@ import com.mostafa.mvvmretrofitapiwithcache.util.Resource;
 import java.util.List;
 
 public class RecipeRepository {
+    private static final String TAG = "RecipeRepository";
     private static RecipeRepository instance;
     private RecipeDao recipeDao;
 
@@ -40,7 +42,25 @@ public class RecipeRepository {
 
             @Override
             public void saveCallResult(@NonNull RecipeSearchResponse item) {
-
+                if (item.getRecipes() != null) {// recipe will be null if API KEY is expired
+                    Recipe[] recipes = new Recipe[item.getRecipes().size()];
+                    int index = 0;
+                   for (long rowid: recipeDao.insertRecipes((Recipe[])(item.getRecipes().toArray(recipes)))){//insert into database cache and update if id is  already exist/ when rowid=-1
+                       if(rowid == -1){
+                           Log.d(TAG, "saveCallResult: CONFLICT... This recipe is already in the cache");
+                           // if the recipe already exists... I don't want to set the ingredients or timestamp b/c
+                           // they will be erased
+                           recipeDao.updateRecipe(
+                                   recipes[index].getRecipe_id(),
+                                   recipes[index].getTitle(),
+                                   recipes[index].getPublisher(),
+                                   recipes[index].getImage_url(),
+                                   recipes[index].getSocial_rank()
+                           );
+                       }
+                       index++;
+                   }
+                }
             }
 
             @Override

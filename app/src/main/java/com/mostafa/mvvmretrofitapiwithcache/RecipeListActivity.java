@@ -3,6 +3,7 @@ package com.mostafa.mvvmretrofitapiwithcache;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.appcompat.widget.SearchView;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.mostafa.mvvmretrofitapiwithcache.adapters.OnRecipeListener;
 import com.mostafa.mvvmretrofitapiwithcache.adapters.RecipeRecyclerAdapter;
+import com.mostafa.mvvmretrofitapiwithcache.util.Testing;
 import com.mostafa.mvvmretrofitapiwithcache.util.VerticalSpacingItemDecorator;
 import com.mostafa.mvvmretrofitapiwithcache.viewmodels.RecipeListViewModel;
 
@@ -41,6 +43,15 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
         setSupportActionBar((Toolbar)findViewById(R.id.toolbar));
     }
         private void subscribeObservers(){
+        mRecipeListViewModel.getRecipes().observe(this,listResource -> {
+            if (listResource !=null){
+                Log.d(TAG,"onChange: status: "+listResource.status);
+                if (listResource.data !=null){
+                    Testing.printRecipes(listResource.data,"data");
+                }
+            }
+        });
+
         mRecipeListViewModel.getViewState().observe(this, new Observer<RecipeListViewModel.ViewState>() {
             @Override
             public void onChanged(RecipeListViewModel.ViewState viewState) {
@@ -65,6 +76,10 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
     private void displaySearchCategories() {
         mAdapter.displaySearchCategories();
     }
+    private  void searchRecipesApi(String q){
+        mRecipeListViewModel.searchRecipesApi(q,1);
+
+    }
 
     private void initRecyclerView(){
         mAdapter = new RecipeRecyclerAdapter(this);
@@ -79,7 +94,7 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
             @Override
             public boolean onQueryTextSubmit(String s) {
 
-
+                searchRecipesApi(s);
                 return false;
             }
 
@@ -99,7 +114,7 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
 
     @Override
     public void onCategoryClick(String category) {
-        
+        searchRecipesApi(category);
     }
 
 }
