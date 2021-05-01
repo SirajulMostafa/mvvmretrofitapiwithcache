@@ -5,6 +5,7 @@ import android.app.Application;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
@@ -20,6 +21,7 @@ import java.util.List;
 public class RecipeListViewModel extends AndroidViewModel {
 
     private static final String TAG = "RecipeListViewModel";
+    public static final String QUERY_EXHAUSTED = "No more results.";
 
     public enum ViewState {CATEGORIES, RECIPES}
 
@@ -27,6 +29,12 @@ public class RecipeListViewModel extends AndroidViewModel {
     private MediatorLiveData<Resource<List<Recipe>>> recipes = new MediatorLiveData<>();
     private RecipeRepository recipeRepository;
 
+    // query extras
+    private boolean isQueryExhausted;
+    private boolean isPerformingQuery;
+    private int pageNumber;
+    private String query;
+    private long requestStartTime;
     public RecipeListViewModel(@NonNull Application application) {
         super(application);
         recipeRepository = RecipeRepository.getInstance(application);
@@ -51,17 +59,83 @@ public class RecipeListViewModel extends AndroidViewModel {
     public LiveData<Resource<List<Recipe>>> getRecipes() {
         return recipes;
     }
+    public int getPageNumber(){
+        return pageNumber;
+    }
+    public void searchRecipesApi(String query, int pageNumber){
+        if(!isPerformingQuery){
+            if(pageNumber == 0){
+                pageNumber = 1;
+            }
+            this.pageNumber = pageNumber;
+            this.query = query;
+            executeSearch();
+        }
+    }
 
-    public void searchRecipesApi(String query, int pageNumber) {
+    public  void searchNextPage(){
+        if (!isQueryExhausted && !isPerformingQuery){
+            pageNumber++;
+            executeSearch();
+        }
+    }
+
+    private void executeSearch(){
+        requestStartTime = System.currentTimeMillis();
+        isPerformingQuery = true;
+        viewState.setValue(ViewState.RECIPES);
         final LiveData<Resource<List<Recipe>>> repositorySource = recipeRepository.searchRecipesApi(query, pageNumber);
         recipes.addSource(repositorySource, new Observer<Resource<List<Recipe>>>() {
             @Override
-            public void onChanged(Resource<List<Recipe>> listResource) {
-                //react to the data
-                recipes.setValue(listResource);
-            }
+            public void onChanged(@Nullable Resource<List<Recipe>> listResource) {
+                    if(listResource != null){//continue observing
+                        if(listResource.status == Resource.Status.SUCCESS){
+                            Log.d(TAG, "onChanged: REQUEST TIME: " + (System.currentTimeMillis() - requestStartTime) / 1000 + " seconds.");
+                            Log.d(TAG, "onChanged: page number: " + pageNumber);
+                            Log.d(TAG, "onChanged: " + listResource.data);
+
+                            isPerformingQuery = false;//after success stop query
+                            if(listResource.data != null){
+                                if(listResource.data.size() == 0 ){//no more result
+                                    Log.d(TAG, "onChanged: query is exhausted...");
+                                    recipes.setValue(
+                                            new Resource<List<Recipe>>(
+                                                    Resource.Status.ERROR,
+                                                    listResource.data,
+                                                    QUERY_EXHAUSTED
+                                            )
+                                    );
+                                }
+                            }
+                            recipes.removeSource(repositorySource);//if success removeSource
+                        }
+                        else if(listResource.status == Resource.Status.ERROR){//if error
+                            Log.d(TAG, "onChanged: REQUEST TIME: " + (System.currentTimeMillis() - requestStartTime) / 1000 + " seconds.");
+                            isPerformingQuery = false;
+
+                            recipes.removeSource(repositorySource);//also removeSource
+                        }
+                        recipes.setValue(listResource);
+                    }
+                    else{
+                        recipes.removeSource(repositorySource);
+                    }
+                }
+
+
         });
     }
+
+//    public void searchRecipesApi(String query, int pageNumber) {
+//        final LiveData<Resource<List<Recipe>>> repositorySource = recipeRepository.searchRecipesApi(query, pageNumber);
+//        recipes.addSource(repositorySource, new Observer<Resource<List<Recipe>>>() {
+//            @Override
+//            public void onChanged(Resource<List<Recipe>> listResource) {
+//                //react to the data
+//                recipes.setValue(listResource);
+//            }
+//        });
+//    }
 }
 
 
