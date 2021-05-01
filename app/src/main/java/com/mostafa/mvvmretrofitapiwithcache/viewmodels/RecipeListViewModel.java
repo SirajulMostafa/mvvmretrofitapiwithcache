@@ -55,6 +55,9 @@ public class RecipeListViewModel extends AndroidViewModel {
     public LiveData<ViewState> getViewState() {
         return viewState;
     }
+    public void setViewCategories(){
+        viewState.setValue(ViewState.CATEGORIES);
+    }
 
     public LiveData<Resource<List<Recipe>>> getRecipes() {
         return recipes;
@@ -62,6 +65,9 @@ public class RecipeListViewModel extends AndroidViewModel {
     public int getPageNumber(){
         return pageNumber;
     }
+
+
+
     public void searchRecipesApi(String query, int pageNumber){
         if(!isPerformingQuery){
             if(pageNumber == 0){
