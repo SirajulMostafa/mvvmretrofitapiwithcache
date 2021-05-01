@@ -34,6 +34,7 @@ public class RecipeListViewModel extends AndroidViewModel {
     private boolean isPerformingQuery;
     private int pageNumber;
     private String query;
+    private boolean cancelRequest;
     private long requestStartTime;
     public RecipeListViewModel(@NonNull Application application) {
         super(application);
@@ -89,20 +90,22 @@ public class RecipeListViewModel extends AndroidViewModel {
     private void executeSearch(){
         requestStartTime = System.currentTimeMillis();
         isPerformingQuery = true;
+        cancelRequest = false;
         viewState.setValue(ViewState.RECIPES);
         final LiveData<Resource<List<Recipe>>> repositorySource = recipeRepository.searchRecipesApi(query, pageNumber);
         recipes.addSource(repositorySource, new Observer<Resource<List<Recipe>>>() {
             @Override
             public void onChanged(@Nullable Resource<List<Recipe>> listResource) {
-                    if(listResource != null){//continue observing
-                        if(listResource.status == Resource.Status.SUCCESS){
+                if (!cancelRequest) {
+                    if (listResource != null) {//continue observing
+                        if (listResource.status == Resource.Status.SUCCESS) {
                             Log.d(TAG, "onChanged: REQUEST TIME: " + (System.currentTimeMillis() - requestStartTime) / 1000 + " seconds.");
                             Log.d(TAG, "onChanged: page number: " + pageNumber);
                             Log.d(TAG, "onChanged: " + listResource.data);
 
                             isPerformingQuery = false;//after success stop query
-                            if(listResource.data != null){
-                                if(listResource.data.size() == 0 ){//no more result
+                            if (listResource.data != null) {
+                                if (listResource.data.size() == 0) {//no more result
                                     Log.d(TAG, "onChanged: query is exhausted...");
                                     recipes.setValue(
                                             new Resource<List<Recipe>>(
@@ -114,25 +117,33 @@ public class RecipeListViewModel extends AndroidViewModel {
                                 }
                             }
                             recipes.removeSource(repositorySource);//if success removeSource
-                        }
-                        else if(listResource.status == Resource.Status.ERROR){//if error
+                        } else if (listResource.status == Resource.Status.ERROR) {//if error
                             Log.d(TAG, "onChanged: REQUEST TIME: " + (System.currentTimeMillis() - requestStartTime) / 1000 + " seconds.");
                             isPerformingQuery = false;
 
                             recipes.removeSource(repositorySource);//also removeSource
                         }
                         recipes.setValue(listResource);
-                    }
-                    else{
+                    } else {
                         recipes.removeSource(repositorySource);
                     }
+                }else {
+                    recipes.removeSource(repositorySource);
                 }
-
+            }
 
         });
     }
 
-//    public void searchRecipesApi(String query, int pageNumber) {
+    public void cancelRequest() {
+       if (isQueryExhausted){
+           Log.d(TAG, "cancelRequest: : canceling search request");
+           cancelRequest = true;
+           isPerformingQuery= false;
+           pageNumber = 1;
+       }
+    }
+    //    public void searchRecipesApi(String query, int pageNumber) {
 //        final LiveData<Resource<List<Recipe>>> repositorySource = recipeRepository.searchRecipesApi(query, pageNumber);
 //        recipes.addSource(repositorySource, new Observer<Resource<List<Recipe>>>() {
 //            @Override
