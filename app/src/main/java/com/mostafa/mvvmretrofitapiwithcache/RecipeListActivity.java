@@ -16,7 +16,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
+import com.bumptech.glide.integration.recyclerview.RecyclerViewPreloader;
 import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.util.ViewPreloadSizeProvider;
 import com.mostafa.mvvmretrofitapiwithcache.adapters.OnRecipeListener;
 import com.mostafa.mvvmretrofitapiwithcache.adapters.RecipeRecyclerAdapter;
 import com.mostafa.mvvmretrofitapiwithcache.util.Testing;
@@ -70,8 +72,9 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
                             Log.e(TAG, "onChanged:ERROR message:" + listResource.message);
                             Log.e(TAG, "onChanged: status: ERROR, #recipes:" + listResource.data.size());
                             mAdapter.hideLoading();
+                            //after hiding loading animation when set the cache data bellow
                             mAdapter.setRecipes(listResource.data);
-                            Toast.makeText(this, listResource.message, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(RecipeListActivity.this, listResource.message, Toast.LENGTH_SHORT).show();
                             if (listResource.message.equals(QUERY_EXHAUSTED)) {
                                 mAdapter.setQueryExhausted();
                             }
@@ -81,7 +84,9 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
                             Log.d(TAG, "onChanged:  cache has been refreshed");
                             Log.d(TAG, "onChanged: status: SUCCESS #recipes:" + listResource.data.size());
                             mAdapter.hideLoading();
+
                             mAdapter.setRecipes(listResource.data);
+
                             break;
                         }
                     }
@@ -97,11 +102,11 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
                     switch (viewState) {
                         case RECIPES: {
                             //recipe will show automatically  from another observer
-                            Toast.makeText(RecipeListActivity.this, "recipes", Toast.LENGTH_SHORT).show();
+                           // Toast.makeText(RecipeListActivity.this, "recipes", Toast.LENGTH_SHORT).show();
                             break;
                         }
                         case CATEGORIES: {
-                            Toast.makeText(RecipeListActivity.this, "categories", Toast.LENGTH_SHORT).show();
+                           // Toast.makeText(RecipeListActivity.this, "categories", Toast.LENGTH_SHORT).show();
                             displaySearchCategories();
                             break;
                         }
@@ -130,10 +135,20 @@ public class RecipeListActivity extends BaseActivity implements OnRecipeListener
     }
 
     private void initRecyclerView() {
-        mAdapter = new RecipeRecyclerAdapter(this,initGlide());
+        ViewPreloadSizeProvider<String> viewPreloadSizeProvider = new ViewPreloadSizeProvider<>();
+        mAdapter = new RecipeRecyclerAdapter(this,initGlide(),viewPreloadSizeProvider);
         VerticalSpacingItemDecorator itemDecorator = new VerticalSpacingItemDecorator(30);
         mRecyclerView.addItemDecoration(itemDecorator);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        RecyclerViewPreloader<String> recyclerViewPreLoader = new RecyclerViewPreloader<String>(
+                Glide.with(this),
+                mAdapter,
+                viewPreloadSizeProvider,
+                30
+        );
+
+        mRecyclerView.addOnScrollListener(recyclerViewPreLoader);
+
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {

@@ -36,6 +36,7 @@ public class RecipeListViewModel extends AndroidViewModel {
     private String query;
     private boolean cancelRequest;
     private long requestStartTime;
+
     public RecipeListViewModel(@NonNull Application application) {
         super(application);
         recipeRepository = RecipeRepository.getInstance(application);
@@ -63,6 +64,7 @@ public class RecipeListViewModel extends AndroidViewModel {
     public LiveData<Resource<List<Recipe>>> getRecipes() {
         return recipes;
     }
+
     public int getPageNumber(){
         return pageNumber;
     }
@@ -76,6 +78,7 @@ public class RecipeListViewModel extends AndroidViewModel {
             }
             this.pageNumber = pageNumber;
             this.query = query;
+            isQueryExhausted = false;
             executeSearch();
         }
     }
@@ -114,13 +117,17 @@ public class RecipeListViewModel extends AndroidViewModel {
                                                     QUERY_EXHAUSTED
                                             )
                                     );
+                                    isQueryExhausted=true;
                                 }
                             }
                             recipes.removeSource(repositorySource);//if success removeSource
-                        } else if (listResource.status == Resource.Status.ERROR) {//if error
+                        }
+                        else if (listResource.status == Resource.Status.ERROR) {//if error
                             Log.d(TAG, "onChanged: REQUEST TIME: " + (System.currentTimeMillis() - requestStartTime) / 1000 + " seconds.");
                             isPerformingQuery = false;
-
+                            if (listResource.message.equals(QUERY_EXHAUSTED)){
+                                isQueryExhausted = true;
+                            }
                             recipes.removeSource(repositorySource);//also removeSource
                         }
                         recipes.setValue(listResource);
@@ -136,7 +143,7 @@ public class RecipeListViewModel extends AndroidViewModel {
     }
 
     public void cancelRequest() {
-       if (isQueryExhausted){
+       if (isPerformingQuery){
            Log.d(TAG, "cancelRequest: : canceling search request");
            cancelRequest = true;
            isPerformingQuery= false;
