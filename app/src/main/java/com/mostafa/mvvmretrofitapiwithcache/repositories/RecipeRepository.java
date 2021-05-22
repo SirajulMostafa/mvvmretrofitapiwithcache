@@ -13,6 +13,7 @@ import com.mostafa.mvvmretrofitapiwithcache.persistence.RecipeDao;
 import com.mostafa.mvvmretrofitapiwithcache.persistence.RecipeDatabase;
 import com.mostafa.mvvmretrofitapiwithcache.requests.ServiceGenerator;
 import com.mostafa.mvvmretrofitapiwithcache.requests.responses.ApiResponse;
+import com.mostafa.mvvmretrofitapiwithcache.requests.responses.RecipeResponse;
 import com.mostafa.mvvmretrofitapiwithcache.requests.responses.RecipeSearchResponse;
 import com.mostafa.mvvmretrofitapiwithcache.util.Constants;
 import com.mostafa.mvvmretrofitapiwithcache.util.NetWorkBoundResource;
@@ -87,5 +88,48 @@ public class RecipeRepository {
             }
         }.getAsLiveData();
     }
+    public LiveData<Resource<Recipe>> searchRecipeApi(final String recipeId){
+        return new NetWorkBoundResource<Recipe, RecipeResponse>(AppExecutors.getInstance()){
+            @Override
+            protected void saveCallResult(@NonNull RecipeResponse item) {
+                // will be null if API key is expired
+                if(item.getRecipe() != null){
+                    item.getRecipe().setTimestamp((int)(System.currentTimeMillis() / 1000));
+                    recipeDao.insertRecipe(item.getRecipe());
+                }
+            }
 
+            @Override
+            protected boolean shouldFetch(@Nullable Recipe data) {
+                Log.d(TAG, "shouldFetch: recipe: " + data.toString());
+                int currentTime = (int)(System.currentTimeMillis() / 1000);
+                Log.d(TAG, "shouldFetch: current time: " + currentTime);
+                int lastRefresh = data.getTimestamp();
+                Log.d(TAG, "shouldFetch: last refresh: " + lastRefresh);
+                Log.d(TAG, "shouldFetch: it's been " + ((currentTime - lastRefresh) / 60 / 60 / 24) +
+                        " days since this recipe was refreshed. 30 days must elapse before refreshing. ");
+                if((currentTime - data.getTimestamp()) >= Constants.RECIPE_REFRESH_TIME){
+                    Log.d(TAG, "shouldFetch: SHOULD REFRESH RECIPE?! " + true);
+                    return true;
+                }
+                Log.d(TAG, "shouldFetch: SHOULD REFRESH RECIPE?! " + false);
+                return false;
+            }
+
+            @NonNull
+            @Override
+            protected LiveData<Recipe> loadFromDb() {
+                return recipeDao.getRecipe(recipeId);
+            }
+
+            @NonNull
+            @Override
+            protected LiveData<ApiResponse<RecipeResponse>> createCall() {
+                return ServiceGenerator.getRecipeApi().getRecipe(
+                        Constants.API_KEY,
+                        recipeId
+                );
+            }
+        }.getAsLiveData();
+    }
 }
